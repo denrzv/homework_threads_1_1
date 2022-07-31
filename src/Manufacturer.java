@@ -1,44 +1,21 @@
+
 public class Manufacturer {
     private final Shop shop;
-    private final String name;
-    private final long SLEEP_TIMER = 1000;
-    private final long PRODUCE_SLEEP_TIMER = 3000;
+    private final long PRODUCE_SLEEP_TIMER = 1500;
 
-    public Manufacturer(Shop shop, String name) {
+    public Manufacturer(Shop shop) {
         this.shop = shop;
-        this.name = name;
     }
 
-    public synchronized void produceCar() {
+    public void produceCar() {
         try {
+            while (!shop.salesLimitReached()) {
                 Thread.sleep(PRODUCE_SLEEP_TIMER);
-                shop.getCars().add(new Car());
-                System.out.println(this + " выпустил автомобиль");
-                notify();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public synchronized Car sellCar() {
-        try {
-            System.out.println(Thread.currentThread().getName() + " зашёл в автосалон");
-            while (shop.getCars().size() == 0) {
-                System.err.println("Машин нет!");
-                wait();
+                shop.addCar(new Car());
+                System.out.println(Thread.currentThread().getName() + " выпустил 1 автомобиль");
             }
-            Thread.sleep(SLEEP_TIMER);
-            System.out.println(Thread.currentThread().getName() + " уехал на новом автомобиле");
-            produceCar();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            System.out.println("Завершаем работу...");
         }
-        return shop.getCars().remove(0);
-    }
-
-    @Override
-    public String toString() {
-        return "Производитель " + name;
     }
 }
