@@ -1,13 +1,22 @@
 import java.util.LinkedList;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Shop {
     private final LinkedList<Car> cars = new LinkedList<>();
     private final int SALES_LIMIT = 10;
     private int salesCounter = 0;
+    private final ReentrantLock lock = new ReentrantLock(true);
+    private final Condition condition = lock.newCondition();
 
-    synchronized void addCar(Car car) {
-        cars.add(car);
-        notify();
+    void addCar(Car car) {
+        try {
+            lock.lock();
+            cars.add(car);
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
     }
 
     boolean hasCar() {
@@ -18,15 +27,18 @@ public class Shop {
         return salesCounter == SALES_LIMIT;
     }
 
-    synchronized Car sellCar() {
-        while (!hasCar()) {
-            try {
-                System.out.println(Thread.currentThread().getName() + " зашёл в автосалон");
+    Car sellCar() {
+        try {
+            lock.lock();
+            System.out.println(Thread.currentThread().getName() + " зашёл в автосалон");
+            while (!hasCar()) {
                 System.out.println("Нет машин!");
-                wait();
-            } catch (InterruptedException e) {
-                System.out.println("Завершаем работу...");
+                condition.await();
             }
+        } catch (InterruptedException e) {
+            System.out.println(Thread.currentThread().getName() + " Завершает работу...");
+        } finally {
+            lock.unlock();
         }
 
         System.out.println(Thread.currentThread().getName() + " уехал на новеньком автомобиле!");
